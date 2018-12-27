@@ -1,0 +1,22 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>tk.ungarscool1.bot</groupId>
+  <artifactId>telemetry</artifactId>
+  <version>0.0.1-SNAPSHOT</version>
+  <name>Telemetry 2.0</name>
+  
+  <dependencies>
+        <dependency>
+            <groupId>org.javacord</groupId>
+            <artifactId>javacord</artifactId>
+            <version>3.0.1</version>
+            <type>pom</type>
+        </dependency>
+
+		<dependency>
+    		<groupId>com.sparkjava</groupId>
+    		<artifactId>spark-core</artifactId>
+    		<version>2.8.0</version>
+		</dependency>
+    </dependencies>
+</project>
