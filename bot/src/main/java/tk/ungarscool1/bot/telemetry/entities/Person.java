@@ -47,7 +47,7 @@ public class Person {
             sql = DriverManager.getConnection("jdbc:mysql://localhost:3306/telemetry", "root", "");
             sqlConnected = true;
         } catch (Exception e) {
-            System.err.println("Impossible de se connecté à la base de donnée");
+            System.err.println("Impossible de se connectÃ© Ã  la base de donnÃ©e");
             sqlConnected = false;
         }
 		if (sqlConnected) {
@@ -147,23 +147,23 @@ public class Person {
 		if ((int)time>0) {
 			
 			result.append((int)time+"h ");
-			time -= (int) time; // Retire la partie entière
+			time -= (int) time; // Retire la partie entiÃ¨re
 		}
 		
 		time *= 60d; // Fait des minutes
 		
 		if ((int)time>0) {
 			result.append((int)time+ "m ");
-			time -= (int) time; // Retire la partie entière
+			time -= (int) time; // Retire la partie entiÃ¨re
 		}
 		
 		time *= 60d; // Fait des secondes
 		if ((long)time>0) {
 			result.append((long)time+ "s ");
-			time -= (long) time; // Retire la partie entière
+			time -= (long) time; // Retire la partie entiÃ¨re
 		}
 		if (result.length()==0) {
-			result.append("Vous n'avez pas encore joué");
+			result.append("Vous n'avez pas encore jouÃ©");
 		}
 		return result.toString();
 	}
@@ -175,20 +175,20 @@ public class Person {
 		if ((int)time>0) {
 			
 			result.append((int)time+"h ");
-			time -= (int) time; // Retire la partie entière
+			time -= (int) time; // Retire la partie entiÃ¨re
 		}
 		
 		time *= 60d; // Fait des minutes
 		
 		if ((int)time>0) {
 			result.append((int)time+ "m ");
-			time -= (int) time; // Retire la partie entière
+			time -= (int) time; // Retire la partie entiÃ¨re
 		}
 		
 		time *= 60d; // Fait des secondes
 		if ((long)time>0) {
 			result.append((long)time+ "s ");
-			time -= (long) time; // Retire la partie entière
+			time -= (long) time; // Retire la partie entiÃ¨re
 		}
 		if (result.length()==0) {
 			result.append("Vous n'avez aucune connexion");
@@ -298,6 +298,9 @@ public class Person {
 	
 	private void SQL_AddGame(String gameName) {
 		try {
+			if (gameName.contains("'")) {
+				gameName = gameName.substring(0, gameName.indexOf("'"))+"\\"+gameName.substring(gameName.indexOf("'"));
+			}
 			Statement statement = sql.createStatement();
 			statement.execute("INSERT INTO games (discordId, gameName, playTime) VALUES ('"+this.discordUser.getId()+"', '"+gameName+"', "+games.get(gameName)+")");
 		} catch (Exception e) {
@@ -308,9 +311,17 @@ public class Person {
 	private void SQL_SyncGame() {
 		for(Map.Entry game: games.entrySet()) {
 			try {
-				Statement statement = sql.createStatement();
-				statement.executeUpdate("UPDATE games SET playTime = "+game.getValue()+" WHERE discordId = '"+this.discordUser.getId()+"' AND gameName = '"+game.getKey()+"'");
-				
+				if(game.getKey().toString().contains("'")) {
+					String before = game.getKey().toString().substring(0, game.getKey().toString().indexOf("'"))+"\\";
+					String after = game.getKey().toString().substring(game.getKey().toString().indexOf("'"));
+					Statement statement = sql.createStatement();
+					statement.executeUpdate("UPDATE games SET playTime = "+game.getValue()+" WHERE discordId = '"+this.discordUser.getId()+"' AND gameName = '"+before+after+"'");
+				} else {
+					Statement statement = sql.createStatement();
+					statement.executeUpdate("UPDATE games SET playTime = "+game.getValue()+" WHERE discordId = '"+this.discordUser.getId()+"' AND gameName = '"+game.getKey()+"'");
+			
+				}
+		
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
