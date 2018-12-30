@@ -1,26 +1,22 @@
 package tk.ungarscool1.bot.telemetry;
 
 import java.awt.Color;
-import java.text.SimpleDateFormat;
 import java.time.LocalDate;
-import java.time.LocalTime;
 import java.time.Month;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.ExecutionException;
 
 import org.javacord.api.DiscordApi;
 import org.javacord.api.DiscordApiBuilder;
 import org.javacord.api.entity.activity.Activity;
 import org.javacord.api.entity.activity.ActivityType;
-import org.javacord.api.entity.message.embed.Embed;
 import org.javacord.api.entity.message.embed.EmbedBuilder;
 import org.javacord.api.entity.server.Server;
 import org.javacord.api.entity.user.User;
 import org.javacord.api.entity.user.UserStatus;
-import org.javacord.api.event.user.UserChangeActivityEvent;
-import org.javacord.api.listener.user.UserChangeActivityListener;
 
 import tk.ungarscool1.bot.telemetry.connector.AutoSaver;
 import tk.ungarscool1.bot.telemetry.connector.SendStats;
@@ -32,7 +28,7 @@ import tk.ungarscool1.bot.telemetry.logging.Logging;
 public class Main {
 
 	private static String version = "";
-	public static User[] users;
+	public static List<User> users = new ArrayList<>();
 	public static Server[] servers;
 	public static HashMap<User, Person> persons = new HashMap<>();
 	public long betweenStartAndNow = ChronoUnit.DAYS.between(LocalDate.of(2018, Month.DECEMBER, 20), LocalDate.now());
@@ -49,7 +45,7 @@ public class Main {
 			
 			
 			api.addServerMemberJoinListener(event -> {
-				users[users.length] = event.getUser();
+				users.add(event.getUser());
 				persons.put(event.getUser(), new Person(event.getUser()));
 			});
 			
@@ -107,12 +103,13 @@ public class Main {
 			
 			
 			api.addMessageCreateListener(event -> {
+				if (event.getMessageAuthor().isYourself()) return;
 				Server msgSrv = event.getServer().get();
 				String message = event.getMessageContent();
 				EmbedBuilder embed = new EmbedBuilder().setFooter("Telemetry 2.0 - "+version);
 				User author = event.getMessageAuthor().asUser().get();
 				
-				if (event.getMessageAuthor().isYourself()) return;
+				
 				if (persons.get(author).doesAcceptTelemetry()) {
 					if (persons.get(author).doesAcceptPerm(Permissions.TYPING_TIME)) {
 						persons.get(author).stopType();
@@ -137,7 +134,6 @@ public class Main {
 									+ "Vous ne pouvez pas activer une option déjà active.").setColor(Color.RED);
 						} else {
 							embed.setTitle("Vos données télémétrique").addField("Votre identifiant", author.getIdAsString()).setColor(Color.GREEN);
-							StringBuilder perms = new StringBuilder();
 							if (persons.get(author).doesAcceptPerm(Permissions.AVERAGE_CONNECTED_TIME)) {
 								embed.addField("Nombre de connexion", persons.get(author).getNumberOfConnection()+"");
 								embed.addField("Temps de connexion", persons.get(author).getTimeOfConnection());
@@ -183,20 +179,20 @@ public class Main {
 				
 				if (message.contains("..update")&&author.getId()==113616829481484288L) {
 					if (message.length()==8) {
-						for (int i = 0; i < users.length; i++) {
-							System.out.println("Index "+i+" : "+users[i].getDiscriminatedName());
-							persons.get(users[i]).close();
-							persons.remove(users[i]);
-							persons.put(users[i], new Person(users[i]));
-							System.out.println("J'ai reload "+users[i].getDiscriminatedName());
+						for (int i = 0; i < users.size(); i++) {
+							System.out.println("Index "+i+" : "+users.get(i).getDiscriminatedName());
+							persons.get(users.get(i)).close();
+							persons.remove(users.get(i));
+							persons.put(users.get(i), new Person(users.get(i)));
+							System.out.println("J'ai reload "+users.get(i).getDiscriminatedName());
 						}
 					} else {
 						if (message.contains(" ")) {
 							String id = message.substring(message.indexOf(" "), message.length());
-							for (int i = 0; i < users.length; i++) {
-								if (users[i].getIdAsString().equals(id)) {
-									persons.get(users[i]).close();
-									persons.replace(users[i], new Person(users[i]));
+							for (int i = 0; i < users.size(); i++) {
+								if (users.get(i).getIdAsString().equals(id)) {
+									persons.get(users.get(i)).close();
+									persons.replace(users.get(i), new Person(users.get(i)));
 								}
 							}
 						}
@@ -207,28 +203,32 @@ public class Main {
 			});
 			
 			servers = api.getServers().toArray(new Server[0]);
-			int totalpeople = 0;
-			for (int i = 0; i < servers.length; i++) {
-				totalpeople+=servers[i].getMemberCount();
-			}
-			
-			users = new User[totalpeople-8];
-			System.out.println(totalpeople);
 			for (int i = 0; i < servers.length; i++) {
 				User[] tempUser = servers[i].getMembers().toArray(new User[0]);
 				System.out.println("Je parcours le serveur "+servers[i].getName());
 				for (int j = 0; j < tempUser.length; j++) {
-					long timestamp = System.currentTimeMillis() / 1000L;
-					users[j] = tempUser[j];
-					persons.put(users[j], new Person(users[j]));
-					if (!users[i].getStatus().equals(UserStatus.OFFLINE)) {
-						persons.get(users[i]).setOnlineTime(timestamp);
+					System.out.println("Exec 0");
+					if (!users.contains(tempUser[j])) {
+						System.out.println("Exec 1");
+						long timestamp = System.currentTimeMillis() / 1000L;
+						System.out.println("Exec 2");
+						users.add(tempUser[j]);
+						System.out.println("Exec 3");
+						persons.put(tempUser[j], new Person(tempUser[j]));
+						System.out.println("Exec 4");
+						if (!tempUser[j].getStatus().equals(UserStatus.OFFLINE)) {
+							System.out.println("Exec 5");
+							persons.get(tempUser[j]).setOnlineTime(timestamp);
+						}
+						System.out.println("Exec 6");
+						System.out.println("J'ai ajouté "+tempUser[j].getDiscriminatedName()+" à la liste users index "+j);
+					} else {
+						System.out.println("J'ai ignoré "+tempUser[j].getDiscriminatedName()+" car il est déjà présent");
 					}
-					System.out.println("J'ai ajouté "+tempUser[j].getDiscriminatedName()+" à la liste users");
 				}
 			}
 			
-			System.out.println("Utilisateur à l'index 0 "+users[0].getDiscriminatedName());
+			System.out.println("Utilisateur à l'index 0 "+users.get(0).getDiscriminatedName());
 			
 		});
 		
@@ -236,15 +236,15 @@ public class Main {
 			@Override
 			
 			public void run() {
-				for (int i = 0; i < users.length; i++) {
+				for (int i = 0; i < users.size(); i++) {
 					long timestamp = System.currentTimeMillis() / 1000L;
-					if (persons.get(users[i]).doesAcceptPerm(Permissions.AVERAGE_CONNECTED_TIME)) {
-						if (!users[i].getStatus().equals(UserStatus.OFFLINE)) {
-							persons.get(users[i]).setOfflineTime(timestamp);
+					if (persons.get(users.get(i)).doesAcceptPerm(Permissions.AVERAGE_CONNECTED_TIME)) {
+						if (!users.get(i).getStatus().equals(UserStatus.OFFLINE)) {
+							persons.get(users.get(i)).setOfflineTime(timestamp);
 						}
 					}
-					persons.get(users[i]).update();
-					persons.get(users[i]).close();
+					persons.get(users.get(i)).update();
+					persons.get(users.get(i)).close();
 				}
 				System.out.println("Tout est sync");
 			}
