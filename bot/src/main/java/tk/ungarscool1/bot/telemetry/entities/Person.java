@@ -188,7 +188,7 @@ public class Person {
 				
 				time *= 60d; // Fait des secondes
 				if ((long)time>0) {
-					result.append((long)time+ "s ");
+					result.append((long)time+ "s");
 					time -= (long) time; // Retire la partie entière
 				}
 				name = (String) game.getKey() + "("+result.toString()+")";
