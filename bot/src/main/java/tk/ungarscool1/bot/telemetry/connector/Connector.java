@@ -29,7 +29,7 @@ public class Connector {
 		long timestamp = System.currentTimeMillis() / 1000L;
 		long perime = timestamp+300;
 		Date expiry = new Date(perime * 1000);
-		embed.addField("Se périme le ", expiry.toLocaleString());
+		embed.addField("Se pÃ©rime le ", expiry.toLocaleString());
 		embed.setColor(Color.MAGENTA);
 		embed.setFooter("Telemetry 2.0");
 		for (int i = 0; i < users.length; i++) {
@@ -48,30 +48,23 @@ public class Connector {
 				embed.setTitle("Vos statistiques").setFooter("Telemetry 2.0").setColor(Color.LIGHT_GRAY);
 				StringBuilder perms = new StringBuilder();
 				if (persons.get(users[i]).doesAcceptPerm(Permissions.AVERAGE_CONNECTED_TIME)) {
-					perms.append("- Votre temps de connexion par jours\n");
 					embed.addField("Nombre de connexion", persons.get(users[i]).getNumberOfConnection()+"");
 					embed.addField("Temps de connexion", persons.get(users[i]).getTimeOfConnection());
 				}
 				if (persons.get(users[i]).doesAcceptPerm(Permissions.AVERAGE_PLAY_TIME)) {
-					perms.append("- Votre temps de jeu en moyenne par jours\n");
 					embed.addField("Temps de jeu", persons.get(users[i]).getPlayTime());
 				}
 				if (persons.get(users[i]).doesAcceptPerm(Permissions.FAVORITE_CHANNEL)) {
-					perms.append("- Votre canal préféré\n");
-					embed.addField("Votre cannal préféré", persons.get(users[i]).getFavoriteChannel());
+					embed.addField("Votre cannal prÃ©fÃ©rÃ©", persons.get(users[i]).getFavoriteChannel());
 				}
 				if (persons.get(users[i]).doesAcceptPerm(Permissions.FAVORITE_GAME)) {
-					perms.append("- Votre jeu préféré\n");
-					embed.addField("Jeu préféré", persons.get(users[i]).getFavoriteGame());
+					embed.addField("Jeu prÃ©fÃ©rÃ©", persons.get(users[i]).getFavoriteGame());
 				}
 				if (persons.get(users[i]).doesAcceptPerm(Permissions.NUMBER_OF_MESSAGE)) {
-					perms.append("- Votre nombre de messages postés\n");
-					embed.addField("Nombre de messages envoyé", persons.get(users[i]).getNumbreOfMessage()+"");
+					embed.addField("Nombre de messages envoyÃ©", persons.get(users[i]).getNumbreOfMessage()+"");
 				}
 				
-				embed.addField("Telemetry 2.0 peut récolter", "```css\n"
-						+ perms.toString()
-						+ "\n```");
+				embed.addField("Telemetry 2.0 peut rÃ©colter", persons.get(users[i]).getPerms());
 			}
 		}
 	}
@@ -96,7 +89,7 @@ public class Connector {
 			}
 				persons.get(users[i]).update();
 		}
-		System.out.println("Les utilisateurs ont été sync à la base de données");
+		System.out.println("Les utilisateurs ont Ã©tÃ© sync Ã  la base de donnÃ©es");
 	}
 	
 }
