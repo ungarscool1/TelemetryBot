@@ -5,6 +5,7 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.text.DecimalFormat;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -25,6 +26,7 @@ public class Person {
 	private long playTime;
 	private HashMap<String, Long> games = new HashMap<>();
 	private HashMap<String, Long> channels = new HashMap<>();
+	private long typingTime;
 	
 	// Connection var
 	
@@ -35,6 +37,10 @@ public class Person {
 	
 	private long startPlay;
 	private long endPlay;
+	
+	// Type var
+	
+	private long startType, endType;
 	
 	// SQL var
 	
@@ -111,14 +117,81 @@ public class Person {
 		}
 	}
 	
+	public void startType() {
+		this.startType = System.currentTimeMillis() / 1000L;
+	}
+	public void stopType() {
+		this.endType = System.currentTimeMillis() / 1000L;
+		long diff = this.endType - this.startType;
+		this.typingTime+=diff;
+	}
+	
+	public String getTypingTime() {
+		StringBuilder result = new StringBuilder();
+		
+		double time = typingTime / 3600d; // Fait des heures
+		if ((int)time>0) {
+			
+			result.append((int)time+"h ");
+			time -= (int) time; // Retire la partie entière
+		}
+		
+		time *= 60d; // Fait des minutes
+		
+		if ((int)time>0) {
+			result.append((int)time+ "m ");
+			time -= (int) time; // Retire la partie entière
+		}
+		
+		time *= 60d; // Fait des secondes
+		if ((long)time>0) {
+			result.append((long)time+ "s ");
+			time -= (long) time; // Retire la partie entière
+		}
+		if (result.length()==0) {
+			result.append("Vous n'avez aucune connexion");
+		}
+		return result.toString();
+	}
+	
+	public String getAverageTypingTime() {
+		StringBuilder result = new StringBuilder();
+		
+		double moy = (this.typingTime * 1d) / (this.numberOfMessages * 1d);
+		result.append(String.format("%.2f", moy));
+		result.append("s/msg");
+		
+		return result.toString();
+	}
+	
 	public String getFavoriteGame() {
 		long better = 0;
 		String name = "Pas de jeu favori";
-
 		for (Map.Entry game : games.entrySet()) {
 			if((long) game.getValue() > better) {
-				name = (String) game.getKey();
 				better = (long) game.getValue();
+				StringBuilder result = new StringBuilder();
+				
+				double time = better / 3600d; // Fait des heures
+				if ((int)time>0) {
+					
+					result.append((int)time+"h ");
+					time -= (int) time; // Retire la partie entière
+				}
+				
+				time *= 60d; // Fait des minutes
+				
+				if ((int)time>0) {
+					result.append((int)time+ "m ");
+					time -= (int) time; // Retire la partie entière
+				}
+				
+				time *= 60d; // Fait des secondes
+				if ((long)time>0) {
+					result.append((long)time+ "s ");
+					time -= (long) time; // Retire la partie entière
+				}
+				name = (String) game.getKey() + "("+result.toString()+")";
 			}
 		}
 		
@@ -196,12 +269,57 @@ public class Person {
 		return result.toString();
 	}
 	
+	
+	
 	public void addNumberOfConnection() {
 		this.NumberOfConnection++;
 	}
 	
 	public long getNumbreOfMessage() {
 		return this.numberOfMessages;
+	}
+	
+	public String getPerms() {
+		StringBuilder result = new StringBuilder();
+		result.append("```diff\n");
+		if (doesAcceptPerm(Permissions.AVERAGE_CONNECTED_TIME)) {
+			result.append("+ ");
+		} else {
+			result.append("- ");
+		}
+		result.append("Votre temps de connexion par jours\n");
+		if (doesAcceptPerm(Permissions.AVERAGE_PLAY_TIME)) {
+			result.append("+ ");
+		} else {
+			result.append("- ");
+		}
+		result.append("Votre temps de jeu en moyenne par jours\n");
+		if (doesAcceptPerm(Permissions.FAVORITE_CHANNEL)) {
+			result.append("+ ");
+		} else {
+			result.append("- ");
+		}
+		result.append("Votre cannal préféré\n");
+		if (doesAcceptPerm(Permissions.FAVORITE_GAME)) {
+			result.append("+ ");
+		} else {
+			result.append("- ");
+		}
+		result.append("Votre jeu préféré\n");
+		if (doesAcceptPerm(Permissions.NUMBER_OF_MESSAGE)) {
+			result.append("+ ");
+		} else {
+			result.append("- ");
+		}
+		result.append("Votre nombre de messages postés\n");
+		if (doesAcceptPerm(Permissions.TYPING_TIME)) {
+			result.append("+ ");
+		} else {
+			result.append("- ");
+		}
+		result.append("Votre temps d'écriture de message\n");
+		result.append("\n```");
+		return result.toString();
 	}
 	
 	public void addMessageToCount(String channelName) {
@@ -268,11 +386,13 @@ public class Person {
 				perms.put(Permissions.FAVORITE_CHANNEL, resultSet.getInt("Perm.FAVORITE_CHANNEL"));
 				perms.put(Permissions.FAVORITE_GAME, resultSet.getInt("Perm.FAVORITE_GAME"));
 				perms.put(Permissions.NUMBER_OF_MESSAGE, resultSet.getInt("Perm.NUMBER_OF_MESSAGE"));
+				perms.put(Permissions.TYPING_TIME, resultSet.getInt("Perm.TYPING_TIME"));
 				acceptTelemetry = resultSet.getBoolean("acceptTelemetry");
 				numberOfMessages = resultSet.getLong("numberOfMessage");
 				NumberOfConnection = resultSet.getLong("nombreDeCo");
 				timeOfConnection = resultSet.getLong("TempsDeCo");
 				playTime = resultSet.getLong("playTime");
+				typingTime = resultSet.getLong("typingTime");
 			}
 			
 		} catch (SQLException e) {
@@ -312,10 +432,10 @@ public class Person {
 		for(Map.Entry game: games.entrySet()) {
 			try {
 				if(game.getKey().toString().contains("'")) {
-					String before = game.getKey().toString().substring(0, game.getKey().toString().indexOf("'"))+"\\";
+					String before = game.getKey().toString().substring(0, game.getKey().toString().indexOf("'"));
 					String after = game.getKey().toString().substring(game.getKey().toString().indexOf("'"));
 					Statement statement = sql.createStatement();
-					statement.executeUpdate("UPDATE games SET playTime = "+game.getValue()+" WHERE discordId = '"+this.discordUser.getId()+"' AND gameName = '"+before+after+"'");
+					statement.executeUpdate("UPDATE games SET playTime = "+game.getValue()+" WHERE discordId = '"+this.discordUser.getId()+"' AND gameName = '"+before+"\\"+after+"'");
 				} else {
 					Statement statement = sql.createStatement();
 					statement.executeUpdate("UPDATE games SET playTime = "+game.getValue()+" WHERE discordId = '"+this.discordUser.getId()+"' AND gameName = '"+game.getKey()+"'");
@@ -383,7 +503,7 @@ public class Person {
 	private void SQL_ModifyTelemetry() {
 		try {
 			Statement statement = sql.createStatement();
-			statement.executeUpdate("UPDATE users SET acceptTelemetry = "+this.acceptTelemetry+", numberOfMessage = "+this.numberOfMessages+", nombreDeCo = "+this.NumberOfConnection+", TempsDeCo = "+this.timeOfConnection+", playTime = "+this.playTime+" WHERE discordId = '"+this.discordUser.getId()+"'");
+			statement.executeUpdate("UPDATE users SET acceptTelemetry = "+this.acceptTelemetry+", numberOfMessage = "+this.numberOfMessages+", nombreDeCo = "+this.NumberOfConnection+", TempsDeCo = "+this.timeOfConnection+", playTime = "+this.playTime+", typingTime = "+this.typingTime+" WHERE discordId = '"+this.discordUser.getId()+"'");
 			
 		} catch (Exception e) {
 			e.printStackTrace();
