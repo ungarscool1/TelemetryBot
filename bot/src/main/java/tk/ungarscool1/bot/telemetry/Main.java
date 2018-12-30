@@ -52,7 +52,13 @@ public class Main {
 				users[users.length] = event.getUser();
 				persons.put(event.getUser(), new Person(event.getUser()));
 			});
-						
+			
+			api.addUserStartTypingListener(event -> {
+				if (persons.get(event.getUser()).doesAcceptTelemetry()&&persons.get(event.getUser()).doesAcceptPerm(Permissions.TYPING_TIME)) {
+					persons.get(event.getUser()).startType();
+				}
+				
+			});	
 			
 			api.addUserChangeStatusListener(event -> {
 				
@@ -107,8 +113,13 @@ public class Main {
 				User author = event.getMessageAuthor().asUser().get();
 				
 				if (event.getMessageAuthor().isYourself()) return;
-				if (persons.get(author).doesAcceptTelemetry()&&persons.get(author).doesAcceptPerm(Permissions.NUMBER_OF_MESSAGE)) {
-					persons.get(author).addMessageToCount(msgSrv.getChannelById(event.getChannel().getIdAsString()).get().getName());
+				if (persons.get(author).doesAcceptTelemetry()) {
+					if (persons.get(author).doesAcceptPerm(Permissions.TYPING_TIME)) {
+						persons.get(author).stopType();
+					}
+					if (persons.get(author).doesAcceptPerm(Permissions.NUMBER_OF_MESSAGE)) {
+						persons.get(author).addMessageToCount(msgSrv.getChannelById(event.getChannel().getIdAsString()).get().getName());
+					}
 				}
 				
 				
@@ -128,44 +139,26 @@ public class Main {
 							embed.setTitle("Vos données télémétrique").addField("Votre identifiant", author.getIdAsString()).setColor(Color.GREEN);
 							StringBuilder perms = new StringBuilder();
 							if (persons.get(author).doesAcceptPerm(Permissions.AVERAGE_CONNECTED_TIME)) {
-								perms.append("+ ");
 								embed.addField("Nombre de connexion", persons.get(author).getNumberOfConnection()+"");
 								embed.addField("Temps de connexion", persons.get(author).getTimeOfConnection());
-							} else {
-								perms.append("- ");
 							}
-							perms.append("Votre temps de connexion par jours\n");
 							if (persons.get(author).doesAcceptPerm(Permissions.AVERAGE_PLAY_TIME)) {
-								perms.append("+ ");
 								embed.addField("Temps de jeu", persons.get(author).getPlayTime());
-							} else {
-								perms.append("- ");
 							}
-							perms.append("Votre temps de jeu en moyenne par jours\n");
 							if (persons.get(author).doesAcceptPerm(Permissions.FAVORITE_CHANNEL)) {
-								perms.append("+ ");
 								embed.addField("Votre cannal préféré", persons.get(author).getFavoriteChannel());
-							} else {
-								perms.append("- ");
 							}
-							perms.append("Votre cannal préféré\n");
 							if (persons.get(author).doesAcceptPerm(Permissions.FAVORITE_GAME)) {
-								perms.append("+ ");
 								embed.addField("Jeu préféré", persons.get(author).getFavoriteGame());
-							} else {
-								perms.append("- ");
 							}
-							perms.append("Votre jeu préféré\n");
 							if (persons.get(author).doesAcceptPerm(Permissions.NUMBER_OF_MESSAGE)) {
-								perms.append("+ ");
 								embed.addField("Nombre de messages envoyé", persons.get(author).getNumbreOfMessage()+"");
-							} else {
-								perms.append("- ");
 							}
-							perms.append("Votre nombre de messages postés\n");
-							embed.addField(api.getYourself().getName() + " peut récolter", "```diff\n"
-									+ perms.toString()
-									+ "\n```");
+							if (persons.get(author).doesAcceptPerm(Permissions.TYPING_TIME)) {
+								embed.addField("Temps total d'écriture", persons.get(author).getTypingTime());
+								embed.addField("Temps d'écriture moyen", persons.get(author).getAverageTypingTime());
+							}
+							embed.addField(api.getYourself().getName() + " peut récolter", persons.get(author).getPerms());
 							embed.addField("Paramètres", "https://telemetry.ungarscool1.tk/connect/?user="+author.getId());
 						}
 					} else {
@@ -186,65 +179,7 @@ public class Main {
 						}
 					}
 					event.getChannel().sendMessage(embed);
-				}
-				
-				if (message.equals("..setup")&&author.getIdAsString().equals("113616829481484288")) {
-					for (int i = 0; i < users.length; i++) {
-						EmbedBuilder temp = new EmbedBuilder();
-						StringBuilder perms = new StringBuilder();
-						temp.setTitle("Le système de télémétrie à été ajouté sur les serveurs où vous êtes présents !");
-						String telemetry = "Désactivé";
-						if (persons.get(users[i]).doesAcceptTelemetry()) {
-							telemetry = "Activé";
-							if (persons.get(author).doesAcceptPerm(Permissions.AVERAGE_CONNECTED_TIME)) {
-								perms.append("+ ");
-							} else {
-								perms.append("- ");
-							}
-							perms.append("Votre temps de connexion par jours\n");
-							if (persons.get(author).doesAcceptPerm(Permissions.AVERAGE_PLAY_TIME)) {
-								perms.append("+ ");
-							} else {
-								perms.append("- ");
-							}
-							perms.append("Votre temps de jeu en moyenne par jours\n");
-							if (persons.get(author).doesAcceptPerm(Permissions.FAVORITE_CHANNEL)) {
-								perms.append("+ ");
-							} else {
-								perms.append("- ");
-							}
-							perms.append("Votre cannal préféré\n");
-							if (persons.get(author).doesAcceptPerm(Permissions.FAVORITE_GAME)) {
-								perms.append("+ ");
-							} else {
-								perms.append("- ");
-							}
-							perms.append("Votre jeu préféré\n");
-							if (persons.get(author).doesAcceptPerm(Permissions.NUMBER_OF_MESSAGE)) {
-								perms.append("+ ");
-							} else {
-								perms.append("- ");
-							}
-							perms.append("Votre nombre de messages postés\n");
-						} else {
-							perms.append("Rien ne peut être récolter sur vous");
-						}
-						temp.addField("Etat de la télémétrie", telemetry);
-						temp.addField(api.getYourself().getName()+" peut récolter", "```diff\n"+perms.toString()+"\n```");
-						try {
-							temp.addField("Paramètres", "Site non actif, pour faire des modifications de permissions merci de contacter "+ api.getOwner().get().getDiscriminatedName());
-						} catch (InterruptedException e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
-						} catch (ExecutionException e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
-						}
-						temp.setFooter(api.getYourself().getName() + version);
-						users[i].sendMessage(temp);
-					}
-				}
-				
+				}			
 				
 				if (message.contains("..update")&&author.getId()==113616829481484288L) {
 					if (message.length()==8) {
