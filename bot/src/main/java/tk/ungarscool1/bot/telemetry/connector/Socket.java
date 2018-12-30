@@ -34,7 +34,11 @@ public class Socket extends Thread{
 		
 		get("/update/:user", (req, res)-> {
 			Connector.updateTelemetryInfo(req.params(":user"));
-			return "Une mise à jour a été demander sur le bot";
+			return "Une mise Ã  jour a Ã©tÃ© demander sur le bot";
+		});
+		
+		get("/getPass/:user", (req, res) -> {
+			return getPassword(req.params(":user"));
 		});
 		
 	}
