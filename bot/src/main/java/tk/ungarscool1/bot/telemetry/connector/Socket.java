@@ -9,12 +9,15 @@ import java.util.HashMap;
 public class Socket extends Thread{
 
 	private HashMap<String, String> tempPassword = new HashMap<>();
+	private HashMap<String, Long> tempPasswordTime = new HashMap<>();
 	
 	private void setPassword(String user, String pass) {
 		if (!isPresent(user)) {
 			tempPassword.put(user, pass);
+			tempPasswordTime.put(user, ((System.currentTimeMillis() / 1000L) + 300));
 		} else {
 			tempPassword.replace(user, pass);
+			tempPasswordTime.replace(user, ((System.currentTimeMillis() / 1000L) + 300));
 		}
 	}
 	
@@ -37,11 +40,20 @@ public class Socket extends Thread{
 		
 		get("/update/:user", (req, res)-> {
 			Connector.updateTelemetryInfo(req.params(":user"));
-			return "Une mise à jour a été demander sur le bot";
+			return "Une mise Ã  jour a Ã©tÃ© demander sur le bot";
 		});
 		
-		get("/getPass/:user", (req, res) -> {
-			return getPassword(req.params(":user"));
+		post("/auth/:user", (req, res) -> {
+			long timestamp = System.currentTimeMillis() / 1000L;
+			if (timestamp <= tempPasswordTime.get(req.params(":user"))) {
+				if (req.queryParams("password").equals(getPassword(req.params(":user")))) {
+					return "success";
+				} else {
+					return "wrong";
+				}
+			} else {
+				return "expired";
+			}
 		});
 		
 		notFound((req, res) -> {
