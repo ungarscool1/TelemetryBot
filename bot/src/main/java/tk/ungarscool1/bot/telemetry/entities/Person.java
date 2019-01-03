@@ -5,9 +5,6 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.text.DecimalFormat;
-import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -19,7 +16,7 @@ public class Person {
 	
 	private User discordUser;
 	private boolean acceptTelemetry;
-	private HashMap<Permissions, Integer> perms = new HashMap<>();
+	private HashMap<Permissions, Boolean> perms = new HashMap<>();
 	private long numberOfMessages;
 	private long NumberOfConnection;
 	private long timeOfConnection;
@@ -53,7 +50,7 @@ public class Person {
             sql = DriverManager.getConnection("jdbc:mysql://localhost:3306/telemetry", "root", "");
             sqlConnected = true;
         } catch (Exception e) {
-            System.err.println("Impossible de se connectÃ© Ã  la base de donnÃ©e");
+            System.err.println("Impossible de se connecté à la base de donnée");
             sqlConnected = false;
         }
 		if (sqlConnected) {
@@ -75,7 +72,7 @@ public class Person {
 	}
 	
 	public boolean doesAcceptPerm(Permissions permission) {
-		return (perms.get(permission)==1);
+		return perms.get(permission);
 	}
 	
 	public long getNumberOfConnection() {
@@ -133,20 +130,20 @@ public class Person {
 		if ((int)time>0) {
 			
 			result.append((int)time+"h ");
-			time -= (int) time; // Retire la partie entiÃ¨re
+			time -= (int) time; // Retire la partie entière
 		}
 		
 		time *= 60d; // Fait des minutes
 		
 		if ((int)time>0) {
 			result.append((int)time+ "m ");
-			time -= (int) time; // Retire la partie entiÃ¨re
+			time -= (int) time; // Retire la partie entière
 		}
 		
 		time *= 60d; // Fait des secondes
 		if ((long)time>0) {
 			result.append((long)time+ "s ");
-			time -= (long) time; // Retire la partie entiÃ¨re
+			time -= (long) time; // Retire la partie entière
 		}
 		if (result.length()==0) {
 			result.append("Vous n'avez aucune connexion");
@@ -164,6 +161,7 @@ public class Person {
 		return result.toString();
 	}
 	
+	@SuppressWarnings("rawtypes")
 	public String getFavoriteGame() {
 		long better = 0;
 		String name = "Pas de jeu favori";
@@ -176,20 +174,20 @@ public class Person {
 				if ((int)time>0) {
 					
 					result.append((int)time+"h ");
-					time -= (int) time; // Retire la partie entiÃ¨re
+					time -= (int) time; // Retire la partie entière
 				}
 				
 				time *= 60d; // Fait des minutes
 				
 				if ((int)time>0) {
 					result.append((int)time+ "m ");
-					time -= (int) time; // Retire la partie entiÃ¨re
+					time -= (int) time; // Retire la partie entière
 				}
 				
 				time *= 60d; // Fait des secondes
 				if ((long)time>0) {
 					result.append((long)time+ "s");
-					time -= (long) time; // Retire la partie entiÃ¨re
+					time -= (long) time; // Retire la partie entière
 				}
 				name = (String) game.getKey() + "("+result.toString()+")";
 			}
@@ -198,6 +196,8 @@ public class Person {
 		return name;
 	}
 	
+	
+	@SuppressWarnings("rawtypes")
 	public String getFavoriteChannel() {
 		long better = 0;
 		String name = "Pas de cannal favori";
@@ -220,23 +220,23 @@ public class Person {
 		if ((int)time>0) {
 			
 			result.append((int)time+"h ");
-			time -= (int) time; // Retire la partie entiÃ¨re
+			time -= (int) time; // Retire la partie entière
 		}
 		
 		time *= 60d; // Fait des minutes
 		
 		if ((int)time>0) {
 			result.append((int)time+ "m ");
-			time -= (int) time; // Retire la partie entiÃ¨re
+			time -= (int) time; // Retire la partie entière
 		}
 		
 		time *= 60d; // Fait des secondes
 		if ((long)time>0) {
 			result.append((long)time+ "s ");
-			time -= (long) time; // Retire la partie entiÃ¨re
+			time -= (long) time; // Retire la partie entière
 		}
 		if (result.length()==0) {
-			result.append("Vous n'avez pas encore jouÃ©");
+			result.append("Vous n'avez pas encore joué");
 		}
 		return result.toString();
 	}
@@ -248,20 +248,20 @@ public class Person {
 		if ((int)time>0) {
 			
 			result.append((int)time+"h ");
-			time -= (int) time; // Retire la partie entiÃ¨re
+			time -= (int) time; // Retire la partie entière
 		}
 		
 		time *= 60d; // Fait des minutes
 		
 		if ((int)time>0) {
 			result.append((int)time+ "m ");
-			time -= (int) time; // Retire la partie entiÃ¨re
+			time -= (int) time; // Retire la partie entière
 		}
 		
 		time *= 60d; // Fait des secondes
 		if ((long)time>0) {
 			result.append((long)time+ "s ");
-			time -= (long) time; // Retire la partie entiÃ¨re
+			time -= (long) time; // Retire la partie entière
 		}
 		if (result.length()==0) {
 			result.append("Vous n'avez aucune connexion");
@@ -299,25 +299,25 @@ public class Person {
 		} else {
 			result.append("- ");
 		}
-		result.append("Votre cannal prÃ©fÃ©rÃ©\n");
+		result.append("Votre cannal préféré\n");
 		if (doesAcceptPerm(Permissions.FAVORITE_GAME)) {
 			result.append("+ ");
 		} else {
 			result.append("- ");
 		}
-		result.append("Votre jeu prÃ©fÃ©rÃ©\n");
+		result.append("Votre jeu préféré\n");
 		if (doesAcceptPerm(Permissions.NUMBER_OF_MESSAGE)) {
 			result.append("+ ");
 		} else {
 			result.append("- ");
 		}
-		result.append("Votre nombre de messages postÃ©s\n");
+		result.append("Votre nombre de messages postés\n");
 		if (doesAcceptPerm(Permissions.TYPING_TIME)) {
 			result.append("+ ");
 		} else {
 			result.append("- ");
 		}
-		result.append("Votre temps d'Ã©criture de message\n");
+		result.append("Votre temps d'écriture de message\n");
 		result.append("\n```");
 		return result.toString();
 	}
@@ -337,6 +337,10 @@ public class Person {
 	public void setTelemetry(boolean active) {
 		this.acceptTelemetry = active;
 		SQL_ModifyTelemetry();
+	}
+	
+	public void setPerm(Permissions permission, boolean active) {
+		this.perms.replace(permission, active);
 	}
 	
 	public void update() {
@@ -381,12 +385,12 @@ public class Person {
 			ResultSet resultSet = statement.executeQuery("SELECT * FROM users WHERE discordId = '"+this.discordUser.getId()+"'");
 			
 			while(resultSet.next()) {
-				perms.put(Permissions.AVERAGE_CONNECTED_TIME, resultSet.getInt("Perm.AVERAGE_CONNECTED_TIME"));
-				perms.put(Permissions.AVERAGE_PLAY_TIME, resultSet.getInt("Perm.AVERAGE_PLAY_TIME"));
-				perms.put(Permissions.FAVORITE_CHANNEL, resultSet.getInt("Perm.FAVORITE_CHANNEL"));
-				perms.put(Permissions.FAVORITE_GAME, resultSet.getInt("Perm.FAVORITE_GAME"));
-				perms.put(Permissions.NUMBER_OF_MESSAGE, resultSet.getInt("Perm.NUMBER_OF_MESSAGE"));
-				perms.put(Permissions.TYPING_TIME, resultSet.getInt("Perm.TYPING_TIME"));
+				perms.put(Permissions.AVERAGE_CONNECTED_TIME, resultSet.getBoolean("Perm.AVERAGE_CONNECTED_TIME"));
+				perms.put(Permissions.AVERAGE_PLAY_TIME, resultSet.getBoolean("Perm.AVERAGE_PLAY_TIME"));
+				perms.put(Permissions.FAVORITE_CHANNEL, resultSet.getBoolean("Perm.FAVORITE_CHANNEL"));
+				perms.put(Permissions.FAVORITE_GAME, resultSet.getBoolean("Perm.FAVORITE_GAME"));
+				perms.put(Permissions.NUMBER_OF_MESSAGE, resultSet.getBoolean("Perm.NUMBER_OF_MESSAGE"));
+				perms.put(Permissions.TYPING_TIME, resultSet.getBoolean("Perm.TYPING_TIME"));
 				acceptTelemetry = resultSet.getBoolean("acceptTelemetry");
 				numberOfMessages = resultSet.getLong("numberOfMessage");
 				NumberOfConnection = resultSet.getLong("nombreDeCo");
@@ -428,6 +432,7 @@ public class Person {
 		}
 	}
 	
+	@SuppressWarnings("rawtypes")
 	private void SQL_SyncGame() {
 		for(Map.Entry game: games.entrySet()) {
 			try {
@@ -474,7 +479,7 @@ public class Person {
 			e.printStackTrace();
 		}
 	}
-	
+	@SuppressWarnings("rawtypes")
 	private void SQL_SyncChannel() {
 		for(Map.Entry channel: channels.entrySet()) {
 			try {

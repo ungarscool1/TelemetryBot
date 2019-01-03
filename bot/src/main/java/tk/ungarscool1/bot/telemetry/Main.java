@@ -19,6 +19,7 @@ import org.javacord.api.entity.user.User;
 import org.javacord.api.entity.user.UserStatus;
 
 import tk.ungarscool1.bot.telemetry.connector.AutoSaver;
+import tk.ungarscool1.bot.telemetry.connector.Connector;
 import tk.ungarscool1.bot.telemetry.connector.SendStats;
 import tk.ungarscool1.bot.telemetry.connector.Socket;
 import tk.ungarscool1.bot.telemetry.entities.Permissions;
@@ -73,7 +74,7 @@ public class Main {
 					persons.get(user).update();
 				}
 				
-				//logging.addEvent(event.getUser().getName(), "a est passer de "+event.getOldStatus().getStatusString()+ " Ã  "+event.getNewStatus().getStatusString());
+				//logging.addEvent(event.getUser().getName(), "a est passer de "+event.getOldStatus().getStatusString()+ " à "+event.getNewStatus().getStatusString());
 				
 			});
 			
@@ -120,20 +121,20 @@ public class Main {
 				}
 				
 				
-				//logging.addEvent(author.getName(), "a Ã©crit un message sur le serveur "+msgSrv.getName()+ " -> "+msgSrv.getChannelById(event.getChannel().getIdAsString()).get().getName());
+				//logging.addEvent(author.getName(), "a écrit un message sur le serveur "+msgSrv.getName()+ " -> "+msgSrv.getChannelById(event.getChannel().getIdAsString()).get().getName());
 				
 				
 				if (message.contains(".telemetry")) {
 					if (persons.get(author).doesAcceptTelemetry()) {
 						if(message.contains("off")) {
-							embed.setTitle("TÃ©lÃ©metrie dÃ©sactivÃ©e").setDescription("Vous venez de dÃ©sactivÃ©e le systÃ¨me de tÃ©lÃ©metrie, pour vous. \n"
-									+ "Le bot ne rÃ©coltera plus aucune information de vous a part les messages ainsi que les modifications").setColor(Color.GREEN);
+							embed.setTitle("Télémetrie désactivée").setDescription("Vous venez de désactivée le système de télémetrie, pour vous. \n"
+									+ "Le bot ne récoltera plus aucune information de vous a part les messages ainsi que les modifications").setColor(Color.GREEN);
 							persons.get(author).setTelemetry(false);
 						} else if (message.contains("on")) {
-							embed.setTitle("OppÃ©ration impossible").setDescription("L'oppÃ©ration demandÃ© ne peut Ãªtre effectuÃ©.\n"
-									+ "Vous ne pouvez pas activer une option dÃ©jÃ  active.").setColor(Color.RED);
+							embed.setTitle("Oppération impossible").setDescription("L'oppération demandé ne peut être effectué.\n"
+									+ "Vous ne pouvez pas activer une option déjà active.").setColor(Color.RED);
 						} else {
-							embed.setTitle("Vos donnÃ©es tÃ©lÃ©mÃ©trique").addField("Votre identifiant", author.getIdAsString()).setColor(Color.GREEN);
+							embed.setTitle("Vos données télémétrique").addField("Votre identifiant", author.getIdAsString()).setColor(Color.GREEN);
 							if (persons.get(author).doesAcceptPerm(Permissions.AVERAGE_CONNECTED_TIME)) {
 								embed.addField("Nombre de connexion", persons.get(author).getNumberOfConnection()+"");
 								embed.addField("Temps de connexion", persons.get(author).getTimeOfConnection());
@@ -142,36 +143,36 @@ public class Main {
 								embed.addField("Temps de jeu", persons.get(author).getPlayTime());
 							}
 							if (persons.get(author).doesAcceptPerm(Permissions.FAVORITE_CHANNEL)) {
-								embed.addField("Votre cannal prÃ©fÃ©rÃ©", persons.get(author).getFavoriteChannel());
+								embed.addField("Votre cannal préféré", persons.get(author).getFavoriteChannel());
 							}
 							if (persons.get(author).doesAcceptPerm(Permissions.FAVORITE_GAME)) {
-								embed.addField("Jeu prÃ©fÃ©rÃ©", persons.get(author).getFavoriteGame());
+								embed.addField("Jeu préféré", persons.get(author).getFavoriteGame());
 							}
 							if (persons.get(author).doesAcceptPerm(Permissions.NUMBER_OF_MESSAGE)) {
-								embed.addField("Nombre de messages envoyÃ©", persons.get(author).getNumbreOfMessage()+"");
+								embed.addField("Nombre de messages envoyé", persons.get(author).getNumbreOfMessage()+"");
 							}
 							if (persons.get(author).doesAcceptPerm(Permissions.TYPING_TIME)) {
-								embed.addField("Temps total d'Ã©criture", persons.get(author).getTypingTime());
-								embed.addField("Temps d'Ã©criture moyen", persons.get(author).getAverageTypingTime());
+								embed.addField("Temps total d'écriture", persons.get(author).getTypingTime());
+								embed.addField("Temps d'écriture moyen", persons.get(author).getAverageTypingTime());
 							}
-							embed.addField(api.getYourself().getName() + " peut rÃ©colter", persons.get(author).getPerms());
-							embed.addField("ParamÃ¨tres", "https://telemetry.ungarscool1.tk/connect/?user="+author.getId());
+							embed.addField(api.getYourself().getName() + " peut récolter", persons.get(author).getPerms());
+							embed.addField("Paramètres", "https://telemetry.ungarscool1.tk/connect/?user="+author.getId());
 						}
 					} else {
 						if(message.contains("on")) {
-							embed.setTitle("TÃ©lÃ©metrie activÃ©e").setDescription("Vous venez de activer le systÃ¨me de tÃ©lÃ©metrie, pour vous. \n"
-									+ "Le bot rÃ©coltera les informations que vous avez accorder Ã  la rÃ©colte.\n"
-									+ "Si vous n'avez jamais activer la tÃ©lÃ©mÃ©trie vous pouvez rÃ©gler vos paramÃ¨tres sur\n"
+							embed.setTitle("Télémetrie activée").setDescription("Vous venez de activer le système de télémetrie, pour vous. \n"
+									+ "Le bot récoltera les informations que vous avez accorder à la récolte.\n"
+									+ "Si vous n'avez jamais activer la télémétrie vous pouvez régler vos paramètres sur\n"
 									+ "https://telemetry.ungarscool1.tk/account/?user="+author.getId()).setColor(Color.GREEN);
 							persons.get(author).setTelemetry(true);
 						} else if (message.contains("off")) {
-							embed.setTitle("OppÃ©ration impossible").setDescription("L'oppÃ©ration demandÃ© ne peut Ãªtre effectuÃ©.\n"
-									+ "Vous ne pouvez pas dÃ©sactiver une option dÃ©jÃ  innactive.").setColor(Color.RED);
+							embed.setTitle("Oppération impossible").setDescription("L'oppération demandé ne peut être effectué.\n"
+									+ "Vous ne pouvez pas désactiver une option déjà innactive.").setColor(Color.RED);
 						} else {
-							embed.setTitle("Vos donnÃ©es tÃ©lÃ©mÃ©trique").setColor(Color.GREEN);
+							embed.setTitle("Vos données télémétrique").setColor(Color.GREEN);
 							embed.addField("Votre identifiant", author.getIdAsString());
-							embed.addField("Etat de la tÃ©lÃ©mÃ©trie", "DÃ©sactiver");
-							embed.addField("ParamÃ¨tres", "https://telemetry.ungarscool1.tk/connect/?user="+author.getId());
+							embed.addField("Etat de la télémétrie", "Désactiver");
+							embed.addField("Paramètres", "https://telemetry.ungarscool1.tk/connect/?user="+author.getId());
 						}
 					}
 					event.getChannel().sendMessage(embed);
@@ -199,6 +200,10 @@ public class Main {
 					}
 				}
 				
+				if(message.equals("..sendStats")) {
+					Connector.sendStats();
+				}
+				
 				
 			});
 			
@@ -221,14 +226,14 @@ public class Main {
 							persons.get(tempUser[j]).setOnlineTime(timestamp);
 						}
 						System.out.println("Exec 6");
-						System.out.println("J'ai ajoutÃ© "+tempUser[j].getDiscriminatedName()+" Ã  la liste users index "+j);
+						System.out.println("J'ai ajouté "+tempUser[j].getDiscriminatedName()+" à la liste users index "+j);
 					} else {
-						System.out.println("J'ai ignorÃ© "+tempUser[j].getDiscriminatedName()+" car il est dÃ©jÃ  prÃ©sent");
+						System.out.println("J'ai ignoré "+tempUser[j].getDiscriminatedName()+" car il est déjà présent");
 					}
 				}
 			}
 			
-			System.out.println("Utilisateur Ã  l'index 0 "+users.get(0).getDiscriminatedName());
+			System.out.println("Utilisateur à l'index 0 "+users.get(0).getDiscriminatedName());
 			
 		});
 		

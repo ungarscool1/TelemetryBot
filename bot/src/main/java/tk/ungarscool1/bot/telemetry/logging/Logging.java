@@ -6,6 +6,7 @@ import java.sql.Statement;
 
 public class Logging {
 
+	@SuppressWarnings("unused")
 	private boolean sqlConnected;
 	private Connection sql;
 	

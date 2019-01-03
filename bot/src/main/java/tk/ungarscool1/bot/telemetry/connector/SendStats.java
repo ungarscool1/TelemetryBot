@@ -17,9 +17,9 @@ public class SendStats extends Thread{
 		try {
 			TimeUnit.SECONDS.sleep(1);
 		} catch (Exception e) {
-			System.err.println("Il y a un problÃ¨me sur le thread SendStats.java");
+			System.err.println("Il y a un problème sur le thread SendStats.java");
 		}
-		System.out.println("SendStats.java - ExÃ©cutÃ©");
+		System.out.println("SendStats.java - Exécuté");
 		run();
 	}
 	
