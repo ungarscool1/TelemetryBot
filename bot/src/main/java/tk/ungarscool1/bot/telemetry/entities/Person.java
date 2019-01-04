@@ -5,6 +5,7 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Timestamp;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -24,6 +25,7 @@ public class Person {
 	private HashMap<String, Long> games = new HashMap<>();
 	private HashMap<String, Long> channels = new HashMap<>();
 	private long typingTime;
+	private Timestamp lastSync;
 	
 	// Connection var
 	
@@ -50,7 +52,7 @@ public class Person {
             sql = DriverManager.getConnection("jdbc:mysql://localhost:3306/telemetry", "root", "");
             sqlConnected = true;
         } catch (Exception e) {
-            System.err.println("Impossible de se connecté à la base de donnée");
+            System.err.println("Impossible de se connectÃ© Ã  la base de donnÃ©e");
             sqlConnected = false;
         }
 		if (sqlConnected) {
@@ -129,21 +131,21 @@ public class Person {
 		double time = typingTime / 3600d; // Fait des heures
 		if ((int)time>0) {
 			
-			result.append((int)time+"h ");
-			time -= (int) time; // Retire la partie entière
+			result.append((int)time+"h");
+			time -= (int) time; // Retire la partie entiÃ¨re
 		}
 		
 		time *= 60d; // Fait des minutes
 		
 		if ((int)time>0) {
-			result.append((int)time+ "m ");
-			time -= (int) time; // Retire la partie entière
+			result.append(" "+(int)time+ "m");
+			time -= (int) time; // Retire la partie entiÃ¨re
 		}
 		
 		time *= 60d; // Fait des secondes
 		if ((long)time>0) {
-			result.append((long)time+ "s ");
-			time -= (long) time; // Retire la partie entière
+			result.append(" "+(long)time+ "s");
+			time -= (long) time; // Retire la partie entiÃ¨re
 		}
 		if (result.length()==0) {
 			result.append("Vous n'avez aucune connexion");
@@ -174,20 +176,20 @@ public class Person {
 				if ((int)time>0) {
 					
 					result.append((int)time+"h ");
-					time -= (int) time; // Retire la partie entière
+					time -= (int) time; // Retire la partie entiÃ¨re
 				}
 				
 				time *= 60d; // Fait des minutes
 				
 				if ((int)time>0) {
 					result.append((int)time+ "m ");
-					time -= (int) time; // Retire la partie entière
+					time -= (int) time; // Retire la partie entiÃ¨re
 				}
 				
 				time *= 60d; // Fait des secondes
 				if ((long)time>0) {
 					result.append((long)time+ "s");
-					time -= (long) time; // Retire la partie entière
+					time -= (long) time; // Retire la partie entiÃ¨re
 				}
 				name = (String) game.getKey() + "("+result.toString()+")";
 			}
@@ -220,23 +222,23 @@ public class Person {
 		if ((int)time>0) {
 			
 			result.append((int)time+"h ");
-			time -= (int) time; // Retire la partie entière
+			time -= (int) time; // Retire la partie entiÃ¨re
 		}
 		
 		time *= 60d; // Fait des minutes
 		
 		if ((int)time>0) {
 			result.append((int)time+ "m ");
-			time -= (int) time; // Retire la partie entière
+			time -= (int) time; // Retire la partie entiÃ¨re
 		}
 		
 		time *= 60d; // Fait des secondes
 		if ((long)time>0) {
 			result.append((long)time+ "s ");
-			time -= (long) time; // Retire la partie entière
+			time -= (long) time; // Retire la partie entiÃ¨re
 		}
 		if (result.length()==0) {
-			result.append("Vous n'avez pas encore joué");
+			result.append("Vous n'avez pas encore jouÃ©");
 		}
 		return result.toString();
 	}
@@ -248,20 +250,20 @@ public class Person {
 		if ((int)time>0) {
 			
 			result.append((int)time+"h ");
-			time -= (int) time; // Retire la partie entière
+			time -= (int) time; // Retire la partie entiÃ¨re
 		}
 		
 		time *= 60d; // Fait des minutes
 		
 		if ((int)time>0) {
 			result.append((int)time+ "m ");
-			time -= (int) time; // Retire la partie entière
+			time -= (int) time; // Retire la partie entiÃ¨re
 		}
 		
 		time *= 60d; // Fait des secondes
 		if ((long)time>0) {
 			result.append((long)time+ "s ");
-			time -= (long) time; // Retire la partie entière
+			time -= (long) time; // Retire la partie entiÃ¨re
 		}
 		if (result.length()==0) {
 			result.append("Vous n'avez aucune connexion");
@@ -299,25 +301,25 @@ public class Person {
 		} else {
 			result.append("- ");
 		}
-		result.append("Votre cannal préféré\n");
+		result.append("Votre cannal prÃ©fÃ©rÃ©\n");
 		if (doesAcceptPerm(Permissions.FAVORITE_GAME)) {
 			result.append("+ ");
 		} else {
 			result.append("- ");
 		}
-		result.append("Votre jeu préféré\n");
+		result.append("Votre jeu prÃ©fÃ©rÃ©\n");
 		if (doesAcceptPerm(Permissions.NUMBER_OF_MESSAGE)) {
 			result.append("+ ");
 		} else {
 			result.append("- ");
 		}
-		result.append("Votre nombre de messages postés\n");
+		result.append("Votre nombre de messages postÃ©s\n");
 		if (doesAcceptPerm(Permissions.TYPING_TIME)) {
 			result.append("+ ");
 		} else {
 			result.append("- ");
 		}
-		result.append("Votre temps d'écriture de message\n");
+		result.append("Votre temps d'Ã©criture de message\n");
 		result.append("\n```");
 		return result.toString();
 	}
@@ -343,7 +345,14 @@ public class Person {
 		this.perms.replace(permission, active);
 	}
 	
+	public Timestamp getLastSync() {
+		return this.lastSync;
+	}
+	
+	
+	
 	public void update() {
+		this.lastSync = new Timestamp(System.currentTimeMillis());
 		SQL_ModifyTelemetry();
 		SQL_SyncGame();
 		SQL_SyncChannel();
@@ -397,6 +406,7 @@ public class Person {
 				timeOfConnection = resultSet.getLong("TempsDeCo");
 				playTime = resultSet.getLong("playTime");
 				typingTime = resultSet.getLong("typingTime");
+				lastSync = resultSet.getTimestamp("lastSync");
 			}
 			
 		} catch (SQLException e) {
@@ -508,7 +518,7 @@ public class Person {
 	private void SQL_ModifyTelemetry() {
 		try {
 			Statement statement = sql.createStatement();
-			statement.executeUpdate("UPDATE users SET acceptTelemetry = "+this.acceptTelemetry+", numberOfMessage = "+this.numberOfMessages+", nombreDeCo = "+this.NumberOfConnection+", TempsDeCo = "+this.timeOfConnection+", playTime = "+this.playTime+", typingTime = "+this.typingTime+" WHERE discordId = '"+this.discordUser.getId()+"'");
+			statement.executeUpdate("UPDATE users SET acceptTelemetry = "+this.acceptTelemetry+", numberOfMessage = "+this.numberOfMessages+", nombreDeCo = "+this.NumberOfConnection+", TempsDeCo = "+this.timeOfConnection+", playTime = "+this.playTime+", typingTime = "+this.typingTime+", lastSync = '"+this.lastSync+"' WHERE discordId = '"+this.discordUser.getId()+"'");
 			
 		} catch (Exception e) {
 			e.printStackTrace();
