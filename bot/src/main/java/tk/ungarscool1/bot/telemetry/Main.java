@@ -25,6 +25,8 @@ import tk.ungarscool1.bot.telemetry.connector.Socket;
 import tk.ungarscool1.bot.telemetry.entities.Permissions;
 import tk.ungarscool1.bot.telemetry.entities.Person;
 import tk.ungarscool1.bot.telemetry.logging.Logging;
+import tk.ungarscool1.cachet2bot.Stats;
+import tk.ungarscool1.cachet2bot.Status;
 
 public class Main {
 
@@ -33,32 +35,42 @@ public class Main {
 	public static Server[] servers;
 	public static HashMap<User, Person> persons = new HashMap<>();
 	public long betweenStartAndNow = ChronoUnit.DAYS.between(LocalDate.of(2018, Month.DECEMBER, 20), LocalDate.now());
+	public static Logging logs = new Logging();
 	
 	public static void main(String[] args) {
+		logs.addEvent("Lancement du bot");
 		Socket socket = new Socket();
 		socket.start();
-		Logging logging = new Logging();
+		String[] statsCred = {"true", "YOUR_API_KEY", "YOUR_METRIC_URL", "3", "3"};
+		Stats cachet = new Stats(statsCred);
 		SendStats sendStats = new SendStats();
 		sendStats.start();
 		AutoSaver autoSaver = new AutoSaver();
 		autoSaver.start();
 		new DiscordApiBuilder().setToken("YOUR_TOKEN").login().thenAccept((DiscordApi api) -> {
-			
+			cachet.setBotStatus(Status.OPERATIONAL);
 			
 			api.addServerMemberJoinListener(event -> {
+				logs.addEvent(event.getUser().getName() + " vient de rejoindre le serveur " + event.getServer().getName());
+				cachet.sendStats();
 				users.add(event.getUser());
 				persons.put(event.getUser(), new Person(event.getUser()));
 			});
 			
 			api.addUserStartTypingListener(event -> {
+				logs.addEvent(event.getUser().getName() + " a commencé à écrire...");
 				if (persons.get(event.getUser()).doesAcceptTelemetry()&&persons.get(event.getUser()).doesAcceptPerm(Permissions.TYPING_TIME)) {
-					persons.get(event.getUser()).startType();
+					cachet.sendStats();
+					if (event.getServerTextChannel().isPresent()) {
+						persons.get(event.getUser()).startType();
+					}
+					
 				}
 				
 			});	
 			
 			api.addUserChangeStatusListener(event -> {
-				
+				cachet.sendStats();
 				if (persons.get(event.getUser()).doesAcceptTelemetry()) {
 					User user = event.getUser();
 					long timestamp = System.currentTimeMillis() / 1000L;
@@ -74,28 +86,46 @@ public class Main {
 					persons.get(user).update();
 				}
 				
-				//logging.addEvent(event.getUser().getName(), "a est passer de "+event.getOldStatus().getStatusString()+ " à "+event.getNewStatus().getStatusString());
+				logs.addEvent(event.getUser().getName() + " est passer de "+event.getOldStatus().getStatusString() + " à " + event.getNewStatus().getStatusString());
 				
 			});
 			
 			
 			api.addUserChangeActivityListener(event -> {
+				cachet.sendStats();
 				User user = event.getUser();
 				long timestamp = System.currentTimeMillis() / 1000L;
 				Optional<Activity> old = event.getOldActivity();
 				Optional<Activity> newest = event.getNewActivity();
+
 				if (persons.get(user).doesAcceptTelemetry()) {
 					if (persons.get(user).doesAcceptPerm(Permissions.AVERAGE_PLAY_TIME)||persons.get(user).doesAcceptPerm(Permissions.FAVORITE_GAME)) {
-						if (newest.isPresent()) {
-							if (!newest.get().getType().equals(ActivityType.LISTENING)&&!newest.get().getType().equals(ActivityType.WATCHING)&&!newest.get().getType().equals(ActivityType.STREAMING)) {
-								persons.get(user).setStartPlay(timestamp);
-							}
-						}
 						if (old.isPresent()) {
-							if (!old.get().getType().equals(ActivityType.LISTENING)&&!old.get().getType().equals(ActivityType.WATCHING)&&!old.get().getType().equals(ActivityType.STREAMING)) {
+							if (old.get().getType().equals(ActivityType.PLAYING)) {
 								persons.get(user).setEndPlay(timestamp, old.get().getName());
+								logs.addEvent(user.getName() + " joué à " + newest.get().getName());
 							}
 							
+						}
+						if (newest.isPresent()) {
+							if (newest.get().getType().equals(ActivityType.PLAYING)) {
+								persons.get(user).setStartPlay(timestamp);
+								logs.addEvent(user.getName() + " joue à " + newest.get().getName());
+							}
+						}
+					}
+					if (persons.get(user).doesAcceptPerm(Permissions.AVERAGE_LISTEN_TIME)) {
+						if (old.isPresent()) {
+							if (old.get().getType().equals(ActivityType.LISTENING)) {
+								logs.addEvent(user.getName() + " n'écoute plus de musique !");
+								persons.get(user).stopListen();
+							}
+						}
+						if (newest.isPresent()) {
+							if (newest.get().getType().equals(ActivityType.LISTENING)) {
+								logs.addEvent(user.getName() + " écoute " + newest.get().getDetails().get() + " de " + newest.get().getState().get() + " sur Spotify");
+								persons.get(user).startListen(newest.get().getDetails().get() + " , " + newest.get().getState().get());
+							}
 						}
 					}
 					persons.get(user).update();
@@ -104,6 +134,7 @@ public class Main {
 			
 			
 			api.addMessageCreateListener(event -> {
+				cachet.sendStats();
 				if (event.getMessageAuthor().isYourself()) return;
 				Server msgSrv = event.getServer().get();
 				String message = event.getMessageContent();
@@ -121,7 +152,7 @@ public class Main {
 				}
 				
 				
-				//logging.addEvent(author.getName(), "a écrit un message sur le serveur "+msgSrv.getName()+ " -> "+msgSrv.getChannelById(event.getChannel().getIdAsString()).get().getName());
+				logs.addEvent(author.getName() + " a écrit un message sur le serveur " + msgSrv.getName() + " -> " + msgSrv.getChannelById(event.getChannel().getIdAsString()).get().getName());
 				
 				
 				if (message.contains(".telemetry")) {
@@ -142,6 +173,18 @@ public class Main {
 							if (persons.get(author).doesAcceptPerm(Permissions.AVERAGE_PLAY_TIME)) {
 								embed.addField("Temps de jeu", persons.get(author).getPlayTime());
 							}
+							if (persons.get(author).doesAcceptPerm(Permissions.AVERAGE_LISTEN_TIME)) {
+								embed.addField("Temps d'écoute", persons.get(author).getListenTime());
+								if (persons.get(author).doesAcceptPerm(Permissions.FAVORITE_MUSIC)) {
+									embed.addField("Votre musique préféré", persons.get(author).getFavoriteMusic());
+								}
+								if (persons.get(author).doesAcceptPerm(Permissions.FAVORITE_MUSIC_ALBUM)) {
+									embed.addField("Votre album préféré", "Non implémenté !");
+								}
+								if (persons.get(author).doesAcceptPerm(Permissions.FAVORITE_MUSIC_ARTIST)) {
+									embed.addField("Votre artiste préféré", "Non implémenté !");
+								}
+							}
 							if (persons.get(author).doesAcceptPerm(Permissions.FAVORITE_CHANNEL)) {
 								embed.addField("Votre cannal préféré", persons.get(author).getFavoriteChannel());
 							}
@@ -156,6 +199,7 @@ public class Main {
 								embed.addField("Temps d'écriture moyen", persons.get(author).getAverageTypingTime());
 							}
 							embed.addField(api.getYourself().getName() + " peut récolter", persons.get(author).getPerms());
+							embed.addField("Dernière synchronisation avec la base de donnée", persons.get(author).getLastSync().toString());
 							embed.addField("Paramètres", "https://telemetry.ungarscool1.tk/connect/?user="+author.getId());
 						}
 					} else {
@@ -181,11 +225,10 @@ public class Main {
 				if (message.contains("..update")&&author.getId()==113616829481484288L) {
 					if (message.length()==8) {
 						for (int i = 0; i < users.size(); i++) {
-							System.out.println("Index "+i+" : "+users.get(i).getDiscriminatedName());
 							persons.get(users.get(i)).close();
 							persons.remove(users.get(i));
 							persons.put(users.get(i), new Person(users.get(i)));
-							System.out.println("J'ai reload "+users.get(i).getDiscriminatedName());
+							logs.addEvent("Le profile de " + users.get(i).getDiscriminatedName() + " a été mis à jour");
 						}
 					} else {
 						if (message.contains(" ")) {
@@ -210,30 +253,29 @@ public class Main {
 			servers = api.getServers().toArray(new Server[0]);
 			for (int i = 0; i < servers.length; i++) {
 				User[] tempUser = servers[i].getMembers().toArray(new User[0]);
-				System.out.println("Je parcours le serveur "+servers[i].getName());
+				logs.addEvent("Je parcours le serveur "+servers[i].getName());
 				for (int j = 0; j < tempUser.length; j++) {
-					System.out.println("Exec 0");
 					if (!users.contains(tempUser[j])) {
-						System.out.println("Exec 1");
 						long timestamp = System.currentTimeMillis() / 1000L;
-						System.out.println("Exec 2");
 						users.add(tempUser[j]);
-						System.out.println("Exec 3");
 						persons.put(tempUser[j], new Person(tempUser[j]));
-						System.out.println("Exec 4");
 						if (!tempUser[j].getStatus().equals(UserStatus.OFFLINE)) {
-							System.out.println("Exec 5");
 							persons.get(tempUser[j]).setOnlineTime(timestamp);
 						}
-						System.out.println("Exec 6");
-						System.out.println("J'ai ajouté "+tempUser[j].getDiscriminatedName()+" à la liste users index "+j);
+						if (tempUser[j].getActivity().isPresent()) {
+							Activity activity = tempUser[j].getActivity().get();
+							if (activity.equals(ActivityType.PLAYING)) {
+								persons.get(tempUser[j]).setStartPlay(timestamp);
+							} else if (activity.equals(ActivityType.LISTENING)) {
+								persons.get(tempUser[j]).startListen(activity.getDetails().get() + " , " + activity.getState().get());
+							}
+						}
+						logs.addEvent(tempUser[j].getDiscriminatedName()+" a été sync au bot");
 					} else {
-						System.out.println("J'ai ignoré "+tempUser[j].getDiscriminatedName()+" car il est déjà présent");
+						logs.addEvent(tempUser[j].getDiscriminatedName()+" a été ignoré car il est déjà présent");
 					}
 				}
 			}
-			
-			System.out.println("Utilisateur à l'index 0 "+users.get(0).getDiscriminatedName());
 			
 		});
 		
@@ -250,8 +292,10 @@ public class Main {
 					}
 					persons.get(users.get(i)).update();
 					persons.get(users.get(i)).close();
+					logs.addEvent(users.get(i).getName() + " vient d'être synchroniser à la DB");
 				}
-				System.out.println("Tout est sync");
+				logs.addEvent("Extinction du bot");
+				cachet.setBotStatus(Status.MAJOR_OUTAGE);
 			}
 			
 		});

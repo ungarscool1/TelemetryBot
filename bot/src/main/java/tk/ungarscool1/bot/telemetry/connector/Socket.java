@@ -40,7 +40,7 @@ public class Socket extends Thread{
 		
 		get("/update/:user", (req, res)-> {
 			Connector.updateTelemetryInfo(req.params(":user"));
-			return "Une mise Ã  jour a Ã©tÃ© demander sur le bot";
+			return "Une mise à jour a été demander sur le bot";
 		});
 		
 		post("/auth/:user", (req, res) -> {
@@ -63,7 +63,7 @@ public class Socket extends Thread{
 		    		"	</head>\r\n" + 
 		    		"	<body>\r\n" + 
 		    		"		<h1>404 Not Found</h1>\r\n" + 
-		    		"		<p>This website is not found</p>\r\n" + 
+		    		"		<p>Your request can't be executed</p>\r\n" + 
 		    		"	</body>\r\n" + 
 		    		"</html>";
 		});

@@ -22,8 +22,10 @@ public class Person {
 	private long NumberOfConnection;
 	private long timeOfConnection;
 	private long playTime;
+	private long listenTime;
 	private HashMap<String, Long> games = new HashMap<>();
 	private HashMap<String, Long> channels = new HashMap<>();
+	private HashMap<String, Long> musics = new HashMap<>();
 	private long typingTime;
 	private Timestamp lastSync;
 	
@@ -41,6 +43,10 @@ public class Person {
 	
 	private long startType, endType;
 	
+	// Listen var
+	
+	private long startListen, stopListen;
+	
 	// SQL var
 	
 	private Connection sql;
@@ -49,10 +55,10 @@ public class Person {
 	public Person(User user) {
 		this.discordUser = user;
 		try {
-            sql = DriverManager.getConnection("jdbc:mysql://localhost:3306/telemetry", "root", "");
+            sql = DriverManager.getConnection("jdbc:mysql://localhost:3306/telemetry", "root", "YOUR_ROOT_PASSWORD");
             sqlConnected = true;
         } catch (Exception e) {
-            System.err.println("Impossible de se connectÃ© Ã  la base de donnÃ©e");
+            System.err.println("Impossible de se connecté à la base de donnée");
             sqlConnected = false;
         }
 		if (sqlConnected) {
@@ -60,6 +66,7 @@ public class Person {
 				SQL_Perm();
 				SQL_Games();
 				SQL_Channels();
+				SQL_Musics();
 			} else {
 				SQL_AddUser();
 				SQL_Perm();
@@ -132,20 +139,20 @@ public class Person {
 		if ((int)time>0) {
 			
 			result.append((int)time+"h");
-			time -= (int) time; // Retire la partie entiÃ¨re
+			time -= (int) time; // Retire la partie entière
 		}
 		
 		time *= 60d; // Fait des minutes
 		
 		if ((int)time>0) {
 			result.append(" "+(int)time+ "m");
-			time -= (int) time; // Retire la partie entiÃ¨re
+			time -= (int) time; // Retire la partie entière
 		}
 		
 		time *= 60d; // Fait des secondes
 		if ((long)time>0) {
 			result.append(" "+(long)time+ "s");
-			time -= (long) time; // Retire la partie entiÃ¨re
+			time -= (long) time; // Retire la partie entière
 		}
 		if (result.length()==0) {
 			result.append("Vous n'avez aucune connexion");
@@ -163,6 +170,70 @@ public class Person {
 		return result.toString();
 	}
 	
+	public void startListen(String music) {
+		this.startListen = System.currentTimeMillis() / 1000L;
+		if (musics.get(music)!=null) {
+			long times = musics.get(music) + 1;
+			musics.remove(music);
+			musics.put(music, times);
+			SQL_SyncMusics();
+		} else {
+			musics.put(music, 1L);
+			SQL_AddMusic(music);
+		}
+	}
+	
+	public void stopListen() {
+		this.stopListen = System.currentTimeMillis() / 1000L;
+		long diff = this.stopListen - this.startListen;
+		this.listenTime += diff;
+	}
+	
+	public String getListenTime() {
+		StringBuilder result = new StringBuilder();
+		
+		double time = this.listenTime / 3600d; // Fait des heures
+		if ((int)time>0) {
+			
+			result.append((int)time+"h");
+			time -= (int) time; // Retire la partie entière
+		}
+		
+		time *= 60d; // Fait des minutes
+		
+		if ((int)time>0) {
+			result.append(" "+(int)time+ "m");
+			time -= (int) time; // Retire la partie entière
+		}
+		
+		time *= 60d; // Fait des secondes
+		if ((long)time>0) {
+			result.append(" "+(long)time+ "s");
+			time -= (long) time; // Retire la partie entière
+		}
+		if (result.length()==0) {
+			result.append("Vous n'avez pas encore écouter de musique sur Spotify, ou vérifier que votre compte discord soit lier à Spotify.");
+		}
+		return result.toString();
+	}
+	
+	@SuppressWarnings("rawtypes")
+	public String getFavoriteMusic() {
+		long better = 0;
+		String name = "Pas de musique favorite";
+		for (Map.Entry music : musics.entrySet()) {
+			if((long) music.getValue() > better) {
+				better = (long) music.getValue();
+				String temp = (String) music.getKey();
+				System.out.println("Debug: " + temp);
+				String disasemble[] = temp.split(" , ");
+				name = disasemble[0] + " - " + disasemble[1] + " ("+better+")";
+			}
+		}
+		
+		return name;
+	}
+	
 	@SuppressWarnings("rawtypes")
 	public String getFavoriteGame() {
 		long better = 0;
@@ -176,20 +247,20 @@ public class Person {
 				if ((int)time>0) {
 					
 					result.append((int)time+"h ");
-					time -= (int) time; // Retire la partie entiÃ¨re
+					time -= (int) time; // Retire la partie entière
 				}
 				
 				time *= 60d; // Fait des minutes
 				
 				if ((int)time>0) {
 					result.append((int)time+ "m ");
-					time -= (int) time; // Retire la partie entiÃ¨re
+					time -= (int) time; // Retire la partie entière
 				}
 				
 				time *= 60d; // Fait des secondes
 				if ((long)time>0) {
 					result.append((long)time+ "s");
-					time -= (long) time; // Retire la partie entiÃ¨re
+					time -= (long) time; // Retire la partie entière
 				}
 				name = (String) game.getKey() + "("+result.toString()+")";
 			}
@@ -222,23 +293,23 @@ public class Person {
 		if ((int)time>0) {
 			
 			result.append((int)time+"h ");
-			time -= (int) time; // Retire la partie entiÃ¨re
+			time -= (int) time; // Retire la partie entière
 		}
 		
 		time *= 60d; // Fait des minutes
 		
 		if ((int)time>0) {
 			result.append((int)time+ "m ");
-			time -= (int) time; // Retire la partie entiÃ¨re
+			time -= (int) time; // Retire la partie entière
 		}
 		
 		time *= 60d; // Fait des secondes
 		if ((long)time>0) {
 			result.append((long)time+ "s ");
-			time -= (long) time; // Retire la partie entiÃ¨re
+			time -= (long) time; // Retire la partie entière
 		}
 		if (result.length()==0) {
-			result.append("Vous n'avez pas encore jouÃ©");
+			result.append("Vous n'avez pas encore joué");
 		}
 		return result.toString();
 	}
@@ -250,20 +321,20 @@ public class Person {
 		if ((int)time>0) {
 			
 			result.append((int)time+"h ");
-			time -= (int) time; // Retire la partie entiÃ¨re
+			time -= (int) time; // Retire la partie entière
 		}
 		
 		time *= 60d; // Fait des minutes
 		
 		if ((int)time>0) {
 			result.append((int)time+ "m ");
-			time -= (int) time; // Retire la partie entiÃ¨re
+			time -= (int) time; // Retire la partie entière
 		}
 		
 		time *= 60d; // Fait des secondes
 		if ((long)time>0) {
 			result.append((long)time+ "s ");
-			time -= (long) time; // Retire la partie entiÃ¨re
+			time -= (long) time; // Retire la partie entière
 		}
 		if (result.length()==0) {
 			result.append("Vous n'avez aucune connexion");
@@ -290,6 +361,12 @@ public class Person {
 			result.append("- ");
 		}
 		result.append("Votre temps de connexion par jours\n");
+		if (doesAcceptPerm(Permissions.AVERAGE_LISTEN_TIME)) {
+			result.append("+ ");
+		} else {
+			result.append("- ");
+		}
+		result.append("Votre temps d'écoute de musique sur Spotify\n");
 		if (doesAcceptPerm(Permissions.AVERAGE_PLAY_TIME)) {
 			result.append("+ ");
 		} else {
@@ -301,25 +378,43 @@ public class Person {
 		} else {
 			result.append("- ");
 		}
-		result.append("Votre cannal prÃ©fÃ©rÃ©\n");
+		result.append("Votre cannal préféré\n");
 		if (doesAcceptPerm(Permissions.FAVORITE_GAME)) {
 			result.append("+ ");
 		} else {
 			result.append("- ");
 		}
-		result.append("Votre jeu prÃ©fÃ©rÃ©\n");
+		result.append("Votre jeu préféré\n");
+		if (doesAcceptPerm(Permissions.FAVORITE_MUSIC)) {
+			result.append("+ ");
+		} else {
+			result.append("- ");
+		}
+		result.append("Votre musique préférée\n");
+		if (doesAcceptPerm(Permissions.FAVORITE_MUSIC_ALBUM)) {
+			result.append("+ ");
+		} else {
+			result.append("- ");
+		}
+		result.append("Votre album de musique préféré\n");
+		if (doesAcceptPerm(Permissions.FAVORITE_MUSIC_ARTIST)) {
+			result.append("+ ");
+		} else {
+			result.append("- ");
+		}
+		result.append("Votre artiste préféré\n");
 		if (doesAcceptPerm(Permissions.NUMBER_OF_MESSAGE)) {
 			result.append("+ ");
 		} else {
 			result.append("- ");
 		}
-		result.append("Votre nombre de messages postÃ©s\n");
+		result.append("Votre nombre de messages postés\n");
 		if (doesAcceptPerm(Permissions.TYPING_TIME)) {
 			result.append("+ ");
 		} else {
 			result.append("- ");
 		}
-		result.append("Votre temps d'Ã©criture de message\n");
+		result.append("Votre temps d'écriture de message\n");
 		result.append("\n```");
 		return result.toString();
 	}
@@ -338,7 +433,15 @@ public class Person {
 	
 	public void setTelemetry(boolean active) {
 		this.acceptTelemetry = active;
+		try {
 		SQL_ModifyTelemetry();
+		} catch (Exception e) {
+			try {
+				sql = DriverManager.getConnection("jdbc:mysql://localhost:3306/telemetry", "root", "QiN@t^jt02!P");
+			} catch (SQLException e1) {
+			}
+			this.update();
+		}
 	}
 	
 	public void setPerm(Permissions permission, boolean active) {
@@ -353,7 +456,16 @@ public class Person {
 	
 	public void update() {
 		this.lastSync = new Timestamp(System.currentTimeMillis());
+		try {
 		SQL_ModifyTelemetry();
+		} catch (Exception e) {
+			try {
+				sql = DriverManager.getConnection("jdbc:mysql://localhost:3306/telemetry", "root", "QiN@t^jt02!P");
+			} catch (SQLException e1) {
+			}
+			this.update();
+			return;
+		}
 		SQL_SyncGame();
 		SQL_SyncChannel();
 	}
@@ -396,8 +508,12 @@ public class Person {
 			while(resultSet.next()) {
 				perms.put(Permissions.AVERAGE_CONNECTED_TIME, resultSet.getBoolean("Perm.AVERAGE_CONNECTED_TIME"));
 				perms.put(Permissions.AVERAGE_PLAY_TIME, resultSet.getBoolean("Perm.AVERAGE_PLAY_TIME"));
+				perms.put(Permissions.AVERAGE_LISTEN_TIME, resultSet.getBoolean("Perm.AVERAGE_LISTEN_TIME"));
 				perms.put(Permissions.FAVORITE_CHANNEL, resultSet.getBoolean("Perm.FAVORITE_CHANNEL"));
 				perms.put(Permissions.FAVORITE_GAME, resultSet.getBoolean("Perm.FAVORITE_GAME"));
+				perms.put(Permissions.FAVORITE_MUSIC, resultSet.getBoolean("Perm.FAVORITE_MUSIC"));
+				perms.put(Permissions.FAVORITE_MUSIC_ARTIST, resultSet.getBoolean("Perm.FAVORITE_MUSIC_ARTIST"));
+				perms.put(Permissions.FAVORITE_MUSIC_ALBUM, resultSet.getBoolean("Perm.FAVORITE_MUSIC_ALBUM"));
 				perms.put(Permissions.NUMBER_OF_MESSAGE, resultSet.getBoolean("Perm.NUMBER_OF_MESSAGE"));
 				perms.put(Permissions.TYPING_TIME, resultSet.getBoolean("Perm.TYPING_TIME"));
 				acceptTelemetry = resultSet.getBoolean("acceptTelemetry");
@@ -406,6 +522,7 @@ public class Person {
 				timeOfConnection = resultSet.getLong("TempsDeCo");
 				playTime = resultSet.getLong("playTime");
 				typingTime = resultSet.getLong("typingTime");
+				listenTime = resultSet.getLong("listenTime");
 				lastSync = resultSet.getTimestamp("lastSync");
 			}
 			
@@ -503,6 +620,58 @@ public class Person {
 	}
 	
 	
+	/*
+	 * SQL function for musics	
+	 */
+	private void SQL_Musics() {
+		try {
+			Statement statement = sql.createStatement();
+			ResultSet resultSet = statement.executeQuery("SELECT * FROM musics WHERE discordId = '"+this.discordUser.getId()+"'");
+			
+			while(resultSet.next()) {
+				String musicBuilder = resultSet.getString("name") + " , " + resultSet.getString("artist") + " , " + resultSet.getString("album");
+				musics.put(musicBuilder, resultSet.getLong("times"));
+			}
+			
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	private void SQL_AddMusic(String music) {
+		try {
+			if (music.contains("'")) {
+				music = music.substring(0, music.indexOf("'"))+"\\"+music.substring(music.indexOf("'"));
+			}
+			String disasemble[] = music.split(" , "); // Titre , Artiste , Album
+			Statement statement = sql.createStatement();
+			statement.execute("INSERT INTO musics (discordId, name, artist) VALUES ('" + this.discordUser.getId() + "', '" + disasemble[0] + "', '" + disasemble[1] + "')");
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+	
+	@SuppressWarnings("rawtypes")
+	private void SQL_SyncMusics() {
+		for(Map.Entry music: musics.entrySet()) {
+			String disasemble[] = music.getKey().toString().split(" , "); // Titre , Artiste , Album
+			try {
+				if(music.getKey().toString().contains("'")) {
+					String before = disasemble[0].substring(0, music.getKey().toString().indexOf("'"));
+					String after = disasemble[0].substring(music.getKey().toString().indexOf("'"));
+					Statement statement = sql.createStatement();
+					statement.executeUpdate("UPDATE musics SET times = "+music.getValue()+" WHERE discordId = '"+this.discordUser.getId()+"' AND name = '"+before+"\\"+after+"' AND artist = '" + disasemble[1] + "'");
+				} else {
+					Statement statement = sql.createStatement();
+					statement.executeUpdate("UPDATE musics SET times = "+music.getValue()+" WHERE discordId = '" + this.discordUser.getId() + "' AND name = '" + disasemble[0] + "' AND artist = '" + disasemble[1] + "'");
+			
+				}
+		
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+	}
 	
 	public void close() {
 		try {
@@ -515,14 +684,9 @@ public class Person {
 	
 	
 	
-	private void SQL_ModifyTelemetry() {
-		try {
+	private void SQL_ModifyTelemetry() throws SQLException {
 			Statement statement = sql.createStatement();
-			statement.executeUpdate("UPDATE users SET acceptTelemetry = "+this.acceptTelemetry+", numberOfMessage = "+this.numberOfMessages+", nombreDeCo = "+this.NumberOfConnection+", TempsDeCo = "+this.timeOfConnection+", playTime = "+this.playTime+", typingTime = "+this.typingTime+", lastSync = '"+this.lastSync+"' WHERE discordId = '"+this.discordUser.getId()+"'");
-			
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
+			statement.executeUpdate("UPDATE users SET acceptTelemetry = "+this.acceptTelemetry+", numberOfMessage = "+this.numberOfMessages+", nombreDeCo = "+this.NumberOfConnection+", TempsDeCo = "+this.timeOfConnection+", playTime = "+this.playTime+", typingTime = "+this.typingTime+", listenTime = "+this.listenTime+", lastSync = '"+this.lastSync+"' WHERE discordId = '"+this.discordUser.getId()+"'");
 	}
 	
 }

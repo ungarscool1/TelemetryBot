@@ -6,6 +6,8 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 
+import org.javacord.api.entity.activity.Activity;
+import org.javacord.api.entity.activity.ActivityType;
 import org.javacord.api.entity.message.MessageBuilder;
 import org.javacord.api.entity.message.embed.EmbedBuilder;
 import org.javacord.api.entity.user.User;
@@ -14,12 +16,14 @@ import org.javacord.api.entity.user.UserStatus;
 import tk.ungarscool1.bot.telemetry.Main;
 import tk.ungarscool1.bot.telemetry.entities.Permissions;
 import tk.ungarscool1.bot.telemetry.entities.Person;
+import tk.ungarscool1.bot.telemetry.logging.Logging;
 
 public class Connector {
 	
 	private static MessageBuilder messageBuilder = new MessageBuilder();
 	private static List<User> users = Main.users;
 	private static HashMap<User, Person> persons = Main.persons;
+	private static Logging logs = Main.logs;
 
 
 	public static void sendMessage(String pass, String userName) {
@@ -35,7 +39,6 @@ public class Connector {
 		embed.setColor(Color.MAGENTA);
 		embed.setFooter("Telemetry 2.0");
 		for (int i = 0; i < users.size(); i++) {
-			System.out.println("Je suis l.25 id "+users.get(i).getId()+"\nEst-ce qu'on le cherche ?"+(users.get(i).getIdAsString().equals(userName)));
 			if (users.get(i).getIdAsString().equals(userName)) {
 				messageBuilder.setEmbed(embed).send(users.get(i)).join();
 				return;
@@ -117,15 +120,36 @@ public class Connector {
 	public static void syncToDB() {
 		for (int i = 0; i < users.size(); i++) {
 			long timestamp = System.currentTimeMillis() / 1000L;
-			if (persons.get(users.get(i)).doesAcceptPerm(Permissions.AVERAGE_CONNECTED_TIME)) {
-				if (!users.get(i).getStatus().equals(UserStatus.OFFLINE)) {
-					persons.get(users.get(i)).setOfflineTime(timestamp);
-					persons.get(users.get(i)).setOnlineTime(timestamp);
+			if (persons.get(users.get(i)).doesAcceptTelemetry()) {
+
+				if (persons.get(users.get(i)).doesAcceptPerm(Permissions.AVERAGE_CONNECTED_TIME)) {
+					if (!users.get(i).getStatus().equals(UserStatus.OFFLINE)) {
+						persons.get(users.get(i)).setOfflineTime(timestamp);
+						persons.get(users.get(i)).setOnlineTime(timestamp);
+					}
+				} 
+				if (persons.get(users.get(i)).doesAcceptPerm(Permissions.AVERAGE_PLAY_TIME)) {
+					if (users.get(i).getActivity().isPresent()) {
+						Activity activity = users.get(i).getActivity().get();
+						if (activity.getType().equals(ActivityType.PLAYING)) {
+							persons.get(users.get(i)).setEndPlay(timestamp, activity.getName());
+							persons.get(users.get(i)).setStartPlay(timestamp);
+						}
+					}
 				}
+				if (persons.get(users.get(i)).doesAcceptPerm(Permissions.AVERAGE_LISTEN_TIME)) {
+					if (users.get(i).getActivity().isPresent()) {
+						Activity activity = users.get(i).getActivity().get();
+						if (activity.getType().equals(ActivityType.LISTENING)) {
+							persons.get(users.get(i)).stopListen();
+							persons.get(users.get(i)).startListen(activity.getDetails().get() + " , " + activity.getState().get());
+						}
+					}
+				}
+					persons.get(users.get(i)).update();
 			}
-				persons.get(users.get(i)).update();
 		}
-		System.out.println("Les utilisateurs ont été sync à la base de données");
+		logs.addEvent("Les utilisateurs ont été sync à la base de données");
 	}
 	
 }
